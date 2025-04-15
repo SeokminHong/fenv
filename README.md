@@ -22,3 +22,10 @@
      set -e my_var
    end
    ```
+
+## Demo
+
+
+https://github.com/user-attachments/assets/2f0429b7-99b7-4566-81cd-20a582abefe5
+
+
