@@ -1,6 +1,6 @@
 #!/usr/bin/env fish
 
-function __fenv_init -S --on-event fish_prompt
+function __fenv -S
     set -l envs
     # 현재 디렉토리부터 상위 디렉토리까지의 .envrc.fish 파일들을 찾음
     set -l dir (pwd)
@@ -86,4 +86,12 @@ function __fenv_hash_file --description 'Compute sha256 hash of a given file'
     # sha256sum 결과의 첫번째 필드를 추출
     set hash (sha256sum "$file" | string split ' ')[1]
     echo $hash
+end
+
+function __fenv_prompt -S --on-event fish_prompt
+    __fenv
+end
+
+function __fenv_preexec -S --on-event fish_preexec
+    __fenv
 end
