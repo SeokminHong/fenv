@@ -1,6 +1,6 @@
 #!/usr/bin/env fish
 
-function __fenv_load -S --on-event fish_prompt
+function __fenv_init -S --on-event fish_prompt
     set -l envs
     # 현재 디렉토리부터 상위 디렉토리까지의 .envrc.fish 파일들을 찾음
     set -l dir (pwd)
@@ -46,11 +46,11 @@ function __fenv_load -S --on-event fish_prompt
         echo "fenv: Unloading $old_env_file"
         if test -f "$cache_dir/$old_env_hash"
             # Unload old env
-            # source "$cache_dir/$old_env_hash"
-            # if functions -q __fenv_unload
-            #     __fenv_unload
-            #     functions -e __fenv_unload
-            # end
+            source "$cache_dir/$old_env_hash"
+            if functions -q __fenv_unload
+                __fenv_unload
+                functions -e __fenv_unload
+            end
         end
     end
 
@@ -62,11 +62,11 @@ function __fenv_load -S --on-event fish_prompt
         # Load new env
         echo "fenv: Loading $new_env_file"
         cp $new_env_file "$cache_dir/$new_env_hash"
-        # source "$cache_dir/$new_env_hash"
-        # if functions -q __fenv_load
-        #     __fenv_load
-        #     functions -e __fenv_load
-        # end
+        source "$cache_dir/$new_env_hash"
+        if functions -q __fenv_load
+            __fenv_load
+            functions -e __fenv_load
+        end
     end
 
     set -gx fenv_stack $new_envs
