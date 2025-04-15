@@ -32,26 +32,10 @@ function __fenv_load -S --on-event fish_prompt
     set base_index 0
     # Found common envs
     for old_env in $fenv_stack
-        set -l old_env_value (string split '///' $old_env)
-        set -l old_env_hash $old_env_value[1]
-        set -l old_env_file $old_env_value[2]
-
-        set -l found 0
-        for new_env in $new_envs
-            set -l new_env_value (string split '///' $new_env)
-            set -l new_env_hash $new_env_value[1]
-            set -l new_env_file $new_env_value[2]
-
-            if test "$old_env_hash" = "$new_env_hash"
-                and test "$old_env_file" = "$new_env_file"
-                set found 1
-                break
-            end
-        end
-        if test $found -eq 0
-            break
-        else
+        if contains $old_env $new_envs
             set base_index (math $base_index + 1)
+        else
+            break
         end
     end
 
