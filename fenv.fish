@@ -1,7 +1,8 @@
 #!/usr/bin/env fish
 
-# __fenv_search 함수: 현재 디렉토리부터 상위 디렉토리까지의 .envrc.fish 파일들을 찾음
-function __fenv_search --description 'Search .envrc.fish files from current directory up to root'
+function __fenv_load -S --on-event fish_prompt
+    set -l envs
+    # 현재 디렉토리부터 상위 디렉토리까지의 .envrc.fish 파일들을 찾음
     set -l dir (pwd)
     while test -d $dir
         # If test is root, break
@@ -9,11 +10,82 @@ function __fenv_search --description 'Search .envrc.fish files from current dire
             break
         end
         if test -f "$dir/.envrc.fish"
-            set -fp envs "$dir/.envrc.fish"
+            set -p envs "$dir/.envrc.fish"
         end
         set dir (dirname $dir)
     end
-    echo $envs
+
+    set -l cache_dir /tmp/fenv.cache
+
+    # 캐시 디렉토리 생성
+    mkdir -p $cache_dir
+    # 캐시 디렉토리의 권한을 700으로 설정
+    chmod 700 $cache_dir
+
+    # New stack
+    set -f new_envs
+    for env_file in $envs
+        set -l env_file_hash (__fenv_hash_file $env_file)
+        set -fa new_envs (string join '///' $env_file_hash $env_file)
+    end
+
+    set base_index 0
+    # Found common envs
+    for old_env in $fenv_stack
+        set -l old_env_value (string split '///' $old_env)
+        set -l old_env_hash $old_env_value[1]
+        set -l old_env_file $old_env_value[2]
+
+        set -l found 0
+        for new_env in $new_envs
+            set -l new_env_value (string split '///' $new_env)
+            set -l new_env_hash $new_env_value[1]
+            set -l new_env_file $new_env_value[2]
+
+            if test "$old_env_hash" = "$new_env_hash"
+                and test "$old_env_file" = "$new_env_file"
+                set found 1
+                break
+            end
+        end
+        if test $found -eq 0
+            break
+        else
+            set base_index (math $base_index + 1)
+        end
+    end
+
+    for old_env in $fenv_stack[-1..(math $base_index + 1)]
+        set -l old_env_value (string split '///' $old_env)
+        set -l old_env_hash $old_env_value[1]
+        set -l old_env_file $old_env_value[2]
+        echo "fenv: Unloading $old_env_file"
+        if test -f "$cache_dir/$old_env_hash"
+            # Unload old env
+            # source "$cache_dir/$old_env_hash"
+            # if functions -q __fenv_unload
+            #     __fenv_unload
+            #     functions -e __fenv_unload
+            # end
+        end
+    end
+
+    for new_env in $new_envs[(math $base_index + 1)..-1]
+        set -l new_env_value (string split '///' $new_env)
+        set -l new_env_hash $new_env_value[1]
+        set -l new_env_file $new_env_value[2]
+
+        # Load new env
+        echo "fenv: Loading $new_env_file"
+        cp $new_env_file "$cache_dir/$new_env_hash"
+        # source "$cache_dir/$new_env_hash"
+        # if functions -q __fenv_load
+        #     __fenv_load
+        #     functions -e __fenv_load
+        # end
+    end
+
+    set -gx fenv_stack $new_envs
 end
 
 # __fenv_hash_file 함수: 주어진 파일에 대해 sha256 해시 값을 계산함
@@ -28,30 +100,6 @@ function __fenv_hash_file --description 'Compute sha256 hash of a given file'
     end
 
     # sha256sum 결과의 첫번째 필드를 추출
-    set hash (sha256sum "$file" | awk '{print $1}')
+    set hash (sha256sum "$file" | string split ' ')[1]
     echo $hash
 end
-
-# __fenv_cache_metadata 함수: .envrc.fish 경로와 해시 정보를 캐시 파일에 저장
-function __fenv_cache_metadata --description 'Cache .envrc.fish file path to hash metadata'
-    # 부모 쉘의 PID를 사용하여 캐시 파일 이름 지정 ($fish_pid는 fish에서 현재 프로세스 ID)
-    set -l ppid (ps -o ppid= -p $fish_pid)
-    set -l cache_file /tmp/fenv.$ppid.cache
-
-    # 기존 캐시 파일 삭제(있다면)
-    if test -f $cache_file
-        rm $cache_file
-    end
-
-    # __fenv_search로 수집한 .envrc.fish 파일들에 대해 해시값 계산 후 캐시에 기록
-    for env_file in (string split ' ' (__fenv_search))
-        set -l hash_value (__fenv_hash_file "$env_file")
-        if test $status -eq 0
-            # 각 줄에 "파일경로 해시값" 형태로 기록
-            echo "$env_file $hash_value" >>$cache_file
-        end
-    end
-    echo "Cache updated in $cache_file"
-end
-
-__fenv_cache_metadata
