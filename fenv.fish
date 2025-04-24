@@ -44,7 +44,9 @@ function __fenv -S
         set -l old_env_hash $old_env_value[1]
         set -l old_env_file $old_env_value[2]
         echo "fenv: Unloading $old_env_file"
+
         if test -f "$cache_dir/$old_env_hash"
+            set -x ENVRC_PATH "$old_env_file"
             # Unload old env
             source "$cache_dir/$old_env_hash"
             if functions -q __fenv_unload
@@ -62,6 +64,7 @@ function __fenv -S
         # Load new env
         echo "fenv: Loading $new_env_file"
         cp $new_env_file "$cache_dir/$new_env_hash"
+        set -x ENVRC_PATH "$new_env_file"
         source "$cache_dir/$new_env_hash"
         if functions -q __fenv_load
             __fenv_load
