@@ -72,7 +72,7 @@ function __fenv -S
         end
     end
 
-    set -gx fenv_stack $new_envs
+    set -x fenv_stack $new_envs
 end
 
 # __fenv_hash_file 함수: 주어진 파일에 대해 sha256 해시 값을 계산함
