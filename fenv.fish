@@ -88,7 +88,7 @@ function __fenv -S
     set -x fenv_stack $new_envs
 end
 
-function __fenv_hash_file --description 'Compute sha256 hash of a given file'
+function __fenv_hash_file --description 'Compute SHA1 hash of a given file'
     # If no file argument provided, return error
     if test (count $argv) -eq 0
         return 1
@@ -101,7 +101,7 @@ function __fenv_hash_file --description 'Compute sha256 hash of a given file'
     end
 
     # Compute  and extract only the hash
-    set hash (sha256 "$file" | string split ' ')[-1]
+    set hash (shasum "$file" | string split ' ')[1]
     echo $hash
 end
 
