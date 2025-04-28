@@ -100,8 +100,8 @@ function __fenv_hash_file --description 'Compute sha256 hash of a given file'
         return 1
     end
 
-    # Compute sha256sum and extract only the hash
-    set hash (sha256sum "$file" | string split ' ')[1]
+    # Compute  and extract only the hash
+    set hash (sha256 "$file" | string split ' ')[-1]
     echo $hash
 end
 
