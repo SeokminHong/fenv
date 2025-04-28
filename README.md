@@ -21,7 +21,7 @@ git clone https://github.com/SeokminHong/fenv.git
 
    ```fish
    # ~/.config/fish/config.fish
-   source fenv-cloned-path/fenv.fish
+   fenv init | source
    ```
 
 2. Write `.envrc.fish` file to your directory and declare `fenv_load` and `fenv_unload` functions
