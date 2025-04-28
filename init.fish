@@ -1,5 +1,3 @@
-#!/usr/bin/env fish
-
 function __fenv -S
     # Local variable to hold list of discovered env files
     set -l envs
