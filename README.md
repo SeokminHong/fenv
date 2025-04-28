@@ -1,16 +1,30 @@
 # fenv
 
+## Installation
+
+### Homebrew
+
+```sh
+brew tap seokminhong/homebrew
+brew install fenv
+```
+
+## Manual
+
+```sh
+git clone https://github.com/SeokminHong/fenv.git
+```
+
 ## Usage
 
-1. Clone this repository
-2. Add the script to your config.fish file
+1. Add the script to your config.fish file
 
    ```fish
    # ~/.config/fish/config.fish
    source fenv-cloned-path/fenv.fish
    ```
 
-3. Write `.envrc.fish` file to your directory and declare `fenv_load` and `fenv_unload` functions
+2. Write `.envrc.fish` file to your directory and declare `fenv_load` and `fenv_unload` functions
 
    ```fish
    # ~/foo/bar/.envrc.fish
