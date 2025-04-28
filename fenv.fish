@@ -57,10 +57,10 @@ function __fenv -S
         if test -f "$cache_dir/$old_env_hash"
             set -x ENVRC_PATH "$old_env_file"
             source "$cache_dir/$old_env_hash"
-            # If __fenv_unload is defined by the script, call and then erase it
-            if functions -q __fenv_unload
-                __fenv_unload
-                functions -e __fenv_unload
+            # If fenv_unload is defined by the script, call and then erase it
+            if functions -q fenv_unload
+                fenv_unload
+                functions -e fenv_unload
             end
         end
     end
@@ -75,12 +75,12 @@ function __fenv -S
         # Copy the env file into cache under its hash name
         cp $new_env_file "$cache_dir/$new_env_hash"
         set -x ENVRC_PATH "$new_env_file"
-        # Source the cached file so its __fenv_load can execute
+        # Source the cached file so its fenv_load can execute
         source "$cache_dir/$new_env_hash"
-        # Call and then cleanup the __fenv_load function if defined
-        if functions -q __fenv_load
-            __fenv_load
-            functions -e __fenv_load
+        # Call and then cleanup the fenv_load function if defined
+        if functions -q fenv_load
+            fenv_load
+            functions -e fenv_load
         end
     end
 
