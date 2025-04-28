@@ -1,5 +1,6 @@
+#!/usr/bin/env fish
 function init
-    cat init.fish
+    cat ../init.fish
 end
 
 function version
