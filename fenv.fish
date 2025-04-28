@@ -27,16 +27,16 @@ function __fenv -S
     chmod 700 $cache_dir
 
     # Build a new list (stack) of envs with their hashes
-    set -f new_envs
+    set -l new_envs
     for env_file in $envs
         # Compute hash of the env file
         set -l env_file_hash (__fenv_hash_file $env_file)
         # Store combined record: hash///filepath
-        set -fa new_envs (string join '///' $env_file_hash $env_file)
+        set -a new_envs (string join '///' $env_file_hash $env_file)
     end
 
     # Determine how many leading entries fenv_stack and new_envs have in common
-    set base_index 0
+    set -l base_index 0
     for old_env in $fenv_stack
         if contains $old_env $new_envs
             set base_index (math $base_index + 1)
