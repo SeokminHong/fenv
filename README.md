@@ -9,10 +9,10 @@ brew tap seokminhong/homebrew
 brew install fenv
 ```
 
-## Manual
+### Cargo install
 
 ```sh
-git clone https://github.com/SeokminHong/fenv.git
+cargo install seokmin_fenv
 ```
 
 ## Usage
