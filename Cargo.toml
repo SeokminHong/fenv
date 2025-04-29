@@ -1,6 +1,6 @@
 [package]
 name = "seokmin_fenv"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 authors = ["Seokmin Hong <ghdtjrald240@gmail.com>"]
 description = "A direnv-like tool for Fish shell"
