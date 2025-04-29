@@ -45,6 +45,10 @@ function __fenv -S
 
     # Unload any previously loaded envs that are no longer present
     for old_env in $fenv_stack[-1..(math $base_index + 1)]
+        # If empty, skip
+        if test -z $old_env
+            continue
+        end
         # Split record into hash and file path
         set -l old_env_value (string split '///' $old_env)
         set -l old_env_hash $old_env_value[1]
@@ -65,6 +69,10 @@ function __fenv -S
 
     # Load any new env files that were not previously loaded
     for new_env in $new_envs[(math $base_index + 1)..-1]
+        # If empty, skip
+        if test -z $new_env
+            continue
+        end
         set -l new_env_value (string split '///' $new_env)
         set -l new_env_hash $new_env_value[1]
         set -l new_env_file $new_env_value[2]
