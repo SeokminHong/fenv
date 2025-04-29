@@ -5,8 +5,10 @@
 ### Homebrew
 
 ```sh
-brew tap seokminhong/homebrew
+brew tap seokminhong/brew
 brew install fenv
+# Or
+brew install seokminhong/brew/fenv
 ```
 
 ### Cargo install
