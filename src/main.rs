@@ -115,12 +115,11 @@ fn handle_allow(path: Option<&Path>) -> io::Result<()> {
     
     for line in content.lines() {
         if let Some(file_path) = line.split("///").nth(1) {
-            if file_path == envrc_path.to_string_lossy() {
-                if line.starts_with(&hash) {
-                    found_same = true;
-                } else {
-                    found_different = true;
-                }
+            if file_path == envrc_path.to_string_lossy() && line.starts_with(&hash) {
+                found_same = true;
+                break;
+            } else if file_path == envrc_path.to_string_lossy() {
+                found_different = true;
                 break;
             }
         }
