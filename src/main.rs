@@ -83,10 +83,7 @@ fn compute_hash(path: &Path) -> io::Result<String> {
         .output()?;
 
     if !output.status.success() {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            "Failed to compute hash",
-        ));
+        return Err(io::Error::other("Failed to compute hash"));
     }
 
     let hash = String::from_utf8_lossy(&output.stdout)
