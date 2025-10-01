@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use std::fs;
-use std::io::{self, Write};
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -109,25 +109,53 @@ fn handle_allow(path: Option<&Path>) -> io::Result<()> {
     let content = fs::read_to_string(&allowlist_path).unwrap_or_default();
     let entry = format!("{}///{}\n", hash, envrc_path.display());
 
-    // Check if already allowed
-    if content.lines().any(|line| {
-        line.split("///")
-            .nth(1)
-            .map(|p| p == envrc_path.to_string_lossy())
-            .unwrap_or(false)
-    }) {
+    // Check if already allowed with same hash
+    let mut found_same = false;
+    let mut found_different = false;
+    
+    for line in content.lines() {
+        if let Some(file_path) = line.split("///").nth(1) {
+            if file_path == envrc_path.to_string_lossy() {
+                if line.starts_with(&hash) {
+                    found_same = true;
+                } else {
+                    found_different = true;
+                }
+                break;
+            }
+        }
+    }
+
+    if found_same {
         println!("fenv: {} is already allowed", envrc_path.display());
         return Ok(());
     }
 
-    // Append to allowlist
-    let mut file = fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&allowlist_path)?;
-    file.write_all(entry.as_bytes())?;
+    // If file exists with different hash, remove old entry first
+    let new_content: String = if found_different {
+        content
+            .lines()
+            .filter(|line| {
+                !line.split("///")
+                    .nth(1)
+                    .map(|p| p == envrc_path.to_string_lossy())
+                    .unwrap_or(false)
+            })
+            .map(|line| format!("{}\n", line))
+            .collect()
+    } else {
+        content
+    };
 
-    println!("fenv: allowed {}", envrc_path.display());
+    // Append new entry
+    let final_content = format!("{}{}", new_content, entry);
+    fs::write(&allowlist_path, final_content)?;
+
+    if found_different {
+        println!("fenv: updated allowlist for {}", envrc_path.display());
+    } else {
+        println!("fenv: allowed {}", envrc_path.display());
+    }
     Ok(())
 }
 
