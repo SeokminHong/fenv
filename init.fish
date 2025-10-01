@@ -24,11 +24,27 @@ function __fenv -S
     mkdir -p $cache_dir
     chmod 700 $cache_dir
 
+    # Path to allowlist file
+    set -l allowlist_path $HOME/.config/fenv/allowed
+
     # Build a new list (stack) of envs with their hashes
     set -l new_envs
     for env_file in $envs
         # Compute hash of the env file
         set -l env_file_hash (__fenv_hash_file $env_file)
+        
+        # Check if env file is allowed
+        if not __fenv_is_allowed $env_file $env_file_hash $allowlist_path
+            # Show warning only if this file hasn't been warned about yet
+            if not contains $env_file $fenv_warned_files
+                set_color yellow
+                echo "fenv: $env_file is not allowed. Run 'fenv allow' to enable it."
+                set_color normal
+                set -a fenv_warned_files $env_file
+            end
+            continue
+        end
+        
         # Store combined record: hash///filepath
         set -a new_envs (string join '///' $env_file_hash $env_file)
     end
@@ -109,6 +125,37 @@ function __fenv_hash_file --description 'Compute SHA1 hash of a given file'
     # Compute  and extract only the hash
     set hash (shasum "$file" | string split ' ')[1]
     echo $hash
+end
+
+function __fenv_is_allowed --description 'Check if a file is in the allowlist'
+    set -l env_file $argv[1]
+    set -l env_file_hash $argv[2]
+    set -l allowlist_path $argv[3]
+
+    # If allowlist doesn't exist, nothing is allowed
+    if not test -f $allowlist_path
+        return 1
+    end
+
+    # Get canonical path of env_file
+    set -l canonical_path (realpath $env_file)
+
+    # Check if the file is in the allowlist with matching hash
+    while read -l line
+        if test -z $line
+            continue
+        end
+        set -l parts (string split '///' $line)
+        set -l allowed_hash $parts[1]
+        set -l allowed_path $parts[2]
+        
+        # Check if path matches and hash matches
+        if test "$allowed_path" = "$canonical_path" -a "$allowed_hash" = "$env_file_hash"
+            return 0
+        end
+    end < $allowlist_path
+
+    return 1
 end
 
 # Hook into prompt event: run __fenv before each prompt redraw
