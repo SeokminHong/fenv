@@ -95,18 +95,42 @@ fn compute_hash(path: &Path) -> io::Result<String> {
     Ok(hash)
 }
 
-fn handle_allow(path: Option<&Path>) -> io::Result<()> {
-    let envrc_path = get_envrc_path(path)?;
-    let hash = compute_hash(&envrc_path)?;
-    let allowlist_path = get_allowlist_path();
+fn find_parent_envrc_files(envrc_path: &Path) -> Vec<PathBuf> {
+    let mut parents = Vec::new();
+    
+    // Start from the parent of the directory containing the .envrc.fish file
+    // If envrc_path is /a/b/c/.envrc.fish, we start from /a/b
+    let start_dir = match envrc_path.parent().and_then(|p| p.parent()) {
+        Some(dir) => dir,
+        None => return parents,
+    };
+    
+    let mut current_dir = Some(start_dir);
 
-    // Create parent directory if it doesn't exist
-    if let Some(parent) = allowlist_path.parent() {
-        fs::create_dir_all(parent)?;
+    while let Some(dir) = current_dir {
+        // Stop at filesystem root
+        if dir.parent().is_none() {
+            break;
+        }
+
+        let parent_envrc = dir.join(".envrc.fish");
+        if parent_envrc.exists() {
+            parents.push(parent_envrc);
+        }
+
+        current_dir = dir.parent();
     }
 
+    // Reverse so we process from outermost to innermost
+    parents.reverse();
+    parents
+}
+
+fn allow_single_file(envrc_path: &Path, allowlist_path: &Path) -> io::Result<bool> {
+    let hash = compute_hash(envrc_path)?;
+
     // Read existing allowlist
-    let content = fs::read_to_string(&allowlist_path).unwrap_or_default();
+    let content = fs::read_to_string(allowlist_path).unwrap_or_default();
     let entry = format!("{}///{}\n", hash, envrc_path.display());
 
     // Check if already allowed with same hash
@@ -126,8 +150,7 @@ fn handle_allow(path: Option<&Path>) -> io::Result<()> {
     }
 
     if found_same {
-        println!("fenv: {} is already allowed", envrc_path.display());
-        return Ok(());
+        return Ok(false);
     }
 
     // If file exists with different hash, remove old entry first
@@ -148,13 +171,42 @@ fn handle_allow(path: Option<&Path>) -> io::Result<()> {
 
     // Append new entry
     let final_content = format!("{}{}", new_content, entry);
-    fs::write(&allowlist_path, final_content)?;
+    fs::write(allowlist_path, final_content)?;
 
-    if found_different {
-        println!("fenv: updated allowlist for {}", envrc_path.display());
-    } else {
-        println!("fenv: allowed {}", envrc_path.display());
+    Ok(true)
+}
+
+fn handle_allow(path: Option<&Path>) -> io::Result<()> {
+    let envrc_path = get_envrc_path(path)?;
+    let allowlist_path = get_allowlist_path();
+
+    // Create parent directory if it doesn't exist
+    if let Some(parent) = allowlist_path.parent() {
+        fs::create_dir_all(parent)?;
     }
+
+    // Find all parent .envrc.fish files
+    let parent_files = find_parent_envrc_files(&envrc_path);
+
+    // Allow all parent files first
+    let mut any_parent_added = false;
+    for parent_file in parent_files {
+        if allow_single_file(&parent_file, &allowlist_path)? {
+            any_parent_added = true;
+        }
+    }
+
+    // Allow the target file
+    let target_added = allow_single_file(&envrc_path, &allowlist_path)?;
+
+    if target_added {
+        println!("fenv: allowed {}", envrc_path.display());
+    } else if any_parent_added {
+        println!("fenv: {} is already allowed (parent .envrc.fish files updated)", envrc_path.display());
+    } else {
+        println!("fenv: {} is already allowed", envrc_path.display());
+    }
+
     Ok(())
 }
 
